@@ -330,13 +330,9 @@ public class TelephonyProvider extends ContentProvider
                         }
                     }
                 } catch (XmlPullParserException e)  {
-                    Log.e(TAG, "Got execption while loading apns.", e);
+                    Log.e(TAG, "Got execption while getting perferred time zone.", e);
                 } catch (IOException e) {
-                    Log.e(TAG, "Got IOExecption while loading apns.", e);
-                } catch (Exception e){
-                    Log.e(TAG, "Exception while loading apns.", e);
-                } finally {
-                    db.endTransaction();
+                    Log.e(TAG, "Got execption while getting perferred time zone.", e);
                 }
             }
         }
