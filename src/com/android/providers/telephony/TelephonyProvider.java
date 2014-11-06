@@ -193,6 +193,7 @@ public class TelephonyProvider extends ContentProvider
                     + SubscriptionManager.ICC_ID + " TEXT NOT NULL,"
                     + SubscriptionManager.SIM_ID + " INTEGER DEFAULT " + SubscriptionManager.SIM_NOT_INSERTED + ","
                     + SubscriptionManager.DISPLAY_NAME + " TEXT,"
+                    + SubscriptionManager.CARRIER_NAME + " TEXT,"
                     + SubscriptionManager.NAME_SOURCE + " INTEGER DEFAULT " + SubscriptionManager.NAME_SOURCE_DEFAULT_SOURCE + ","
                     + SubscriptionManager.COLOR + " INTEGER DEFAULT " + SubscriptionManager.COLOR_DEFAULT + ","
                     + SubscriptionManager.NUMBER + " TEXT,"
@@ -382,6 +383,17 @@ public class TelephonyProvider extends ContentProvider
             if (oldVersion < (13 << 16 | 6)) {
                 db.execSQL("ALTER TABLE " + CARRIERS_TABLE +
                         " ADD COLUMN "+READ_ONLY+" BOOLEAN DEFAULT 0;");
+                try {
+                    // Try to update the siminfo table. It might not be there.
+                    db.execSQL("ALTER TABLE " + SIMINFO_TABLE +
+                            " ADD COLUMN " + SubscriptionManager.CARRIER_NAME + " TEXT DEFAULT '';");
+                } catch (SQLiteException e) {
+                    if (DBG) {
+                        log("onUpgrade skipping " + SIMINFO_TABLE + " upgrade. " +
+                                " The table will get created in onOpen.");
+                    }
+                }
+                oldVersion = 13 << 16 | 6;
             }
             if (DBG) {
                 log("dbh.onUpgrade:- db=" + db + " oldV=" + oldVersion + " newV=" + newVersion);
