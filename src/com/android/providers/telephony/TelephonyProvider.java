@@ -61,7 +61,7 @@ public class TelephonyProvider extends ContentProvider
     private static final boolean DBG = true;
     private static final boolean VDBG = false;
 
-    private static final int DATABASE_VERSION = 12 << 16;
+    private static final int DATABASE_VERSION = 13 << 16;
     private static final int URL_UNKNOWN = 0;
     private static final int URL_TELEPHONY = 1;
     private static final int URL_CURRENT = 2;
@@ -378,6 +378,10 @@ public class TelephonyProvider extends ContentProvider
                     }
                 }
                 oldVersion = 12 << 16 | 6;
+            }
+            if (oldVersion < (13 << 16 | 6)) {
+                db.execSQL("ALTER TABLE " + CARRIERS_TABLE +
+                        " ADD COLUMN "+READ_ONLY+" BOOLEAN DEFAULT 0;");
             }
             if (DBG) {
                 log("dbh.onUpgrade:- db=" + db + " oldV=" + oldVersion + " newV=" + newVersion);
