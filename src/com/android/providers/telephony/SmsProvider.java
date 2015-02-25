@@ -302,8 +302,8 @@ public class SmsProvider extends ContentProvider {
         } catch (NumberFormatException exception) {
             throw new IllegalArgumentException("Bad SMS ICC ID: " + messageIndexString);
         }
-        long[] sub = SubscriptionManager.getSubId(phoneId);
-        SmsManager smsManager = SmsManager.getSmsManagerForSubscriber(sub[0]);
+        int[] sub = SubscriptionManager.getSubId(phoneId);
+        SmsManager smsManager = SmsManager.getSmsManagerForSubscriptionId(sub[0]);
 
         // Use phone id to avoid AppOps uid mismatch in telephony
         long token = Binder.clearCallingIdentity();
@@ -330,8 +330,8 @@ public class SmsProvider extends ContentProvider {
      */
     private Cursor getAllMessagesFromIcc(int phoneId) {
         ArrayList<SmsMessage> messages;
-        long[] sub = SubscriptionManager.getSubId(phoneId);
-        SmsManager smsManager = SmsManager.getSmsManagerForSubscriber(sub[0]);
+        int[] sub = SubscriptionManager.getSubId(phoneId);
+        SmsManager smsManager = SmsManager.getSmsManagerForSubscriptionId(sub[0]);
 
         // use phone app permissions to avoid UID mismatch in AppOpsManager.noteOp() call
         long token = Binder.clearCallingIdentity();
@@ -674,8 +674,8 @@ public class SmsProvider extends ContentProvider {
      * successful.
      */
     private int deleteMessageFromIcc(String messageIndexString, int phoneId) {
-        long[] sub = SubscriptionManager.getSubId(phoneId);
-        SmsManager smsManager = SmsManager.getSmsManagerForSubscriber(sub[0]);
+        int[] sub = SubscriptionManager.getSubId(phoneId);
+        SmsManager smsManager = SmsManager.getSmsManagerForSubscriptionId(sub[0]);
 
         // Use phone id to avoid AppOps uid mismatch in telephony
         long token = Binder.clearCallingIdentity();
