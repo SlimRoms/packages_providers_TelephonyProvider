@@ -20,7 +20,6 @@ import android.app.AppOpsManager;
 import android.content.ContentProvider;
 import android.content.ContentResolver;
 import android.content.ContentValues;
-import android.content.Context;
 import android.content.UriMatcher;
 import android.database.Cursor;
 import android.database.DatabaseUtils;
@@ -33,7 +32,6 @@ import android.os.Binder;
 import android.os.UserHandle;
 import android.provider.Contacts;
 import android.provider.Telephony;
-import android.provider.Telephony.Mms;
 import android.provider.Telephony.MmsSms;
 import android.provider.Telephony.Sms;
 import android.provider.Telephony.TextBasedSmsColumns;
@@ -304,8 +302,8 @@ public class SmsProvider extends ContentProvider {
         } catch (NumberFormatException exception) {
             throw new IllegalArgumentException("Bad SMS ICC ID: " + messageIndexString);
         }
-        long[] sub = SubscriptionManager.getSubId(phoneId);
-        SmsManager smsManager = SmsManager.getSmsManagerForSubscriber(sub[0]);
+        int[] sub = SubscriptionManager.getSubId(phoneId);
+        SmsManager smsManager = SmsManager.getSmsManagerForSubscriptionId(sub[0]);
 
         // Use phone id to avoid AppOps uid mismatch in telephony
         long token = Binder.clearCallingIdentity();
@@ -332,8 +330,8 @@ public class SmsProvider extends ContentProvider {
      */
     private Cursor getAllMessagesFromIcc(int phoneId) {
         ArrayList<SmsMessage> messages;
-        long[] sub = SubscriptionManager.getSubId(phoneId);
-        SmsManager smsManager = SmsManager.getSmsManagerForSubscriber(sub[0]);
+        int[] sub = SubscriptionManager.getSubId(phoneId);
+        SmsManager smsManager = SmsManager.getSmsManagerForSubscriptionId(sub[0]);
 
         // use phone app permissions to avoid UID mismatch in AppOpsManager.noteOp() call
         long token = Binder.clearCallingIdentity();
@@ -400,15 +398,16 @@ public class SmsProvider extends ContentProvider {
 
     @Override
     public Uri insert(Uri url, ContentValues initialValues) {
+        final int callerUid = Binder.getCallingUid();
         long token = Binder.clearCallingIdentity();
         try {
-            return insertInner(url, initialValues);
+            return insertInner(url, initialValues, callerUid);
         } finally {
             Binder.restoreCallingIdentity(token);
         }
     }
 
-    private Uri insertInner(Uri url, ContentValues initialValues) {
+    private Uri insertInner(Uri url, ContentValues initialValues, int callerUid) {
         ContentValues values;
         long rowID;
         int type = Sms.MESSAGE_TYPE_ALL;
@@ -551,6 +550,13 @@ public class SmsProvider extends ContentProvider {
                 // Mark all non-inbox messages read.
                 values.put(Sms.READ, ONE);
             }
+            if (ProviderUtil.shouldSetCreator(values, callerUid)) {
+                // Only SYSTEM or PHONE can set CREATOR
+                // If caller is not SYSTEM or PHONE, or SYSTEM or PHONE does not set CREATOR
+                // set CREATOR using the truth on caller.
+                // Note: Inferring package name from UID may include unrelated package names
+                values.put(Sms.CREATOR, ProviderUtil.getPackageNamesByUid(getContext(), callerUid));
+            }
         } else {
             if (initialValues == null) {
                 values = new ContentValues(1);
@@ -584,7 +590,7 @@ public class SmsProvider extends ContentProvider {
             notifyChange(uri);
             return uri;
         } else {
-            Log.e(TAG,"insert: failed! " + values.toString());
+            Log.e(TAG,"insert: failed!");
         }
 
         return null;
@@ -668,8 +674,8 @@ public class SmsProvider extends ContentProvider {
      * successful.
      */
     private int deleteMessageFromIcc(String messageIndexString, int phoneId) {
-        long[] sub = SubscriptionManager.getSubId(phoneId);
-        SmsManager smsManager = SmsManager.getSmsManagerForSubscriber(sub[0]);
+        int[] sub = SubscriptionManager.getSubId(phoneId);
+        SmsManager smsManager = SmsManager.getSmsManagerForSubscriptionId(sub[0]);
 
         // Use phone id to avoid AppOps uid mismatch in telephony
         long token = Binder.clearCallingIdentity();
@@ -691,6 +697,7 @@ public class SmsProvider extends ContentProvider {
 
     @Override
     public int update(Uri url, ContentValues values, String where, String[] whereArgs) {
+        final int callerUid = Binder.getCallingUid();
         int count = 0;
         String table = TABLE_SMS;
         String extraWhere = null;
@@ -748,6 +755,13 @@ public class SmsProvider extends ContentProvider {
             default:
                 throw new UnsupportedOperationException(
                         "URI " + url + " not supported");
+        }
+
+        if (table.equals(TABLE_SMS) && ProviderUtil.shouldRemoveCreator(values, callerUid)) {
+            // CREATOR should not be changed by non-SYSTEM/PHONE apps
+            Log.w(TAG, ProviderUtil.getPackageNamesByUid(getContext(), callerUid) +
+                    " tries to update CREATOR");
+            values.remove(Sms.CREATOR);
         }
 
         where = DatabaseUtils.concatenateWhere(where, extraWhere);
