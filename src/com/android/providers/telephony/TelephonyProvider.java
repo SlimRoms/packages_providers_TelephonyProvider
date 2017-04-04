@@ -265,7 +265,10 @@ public class TelephonyProvider extends ContentProvider
                     + SubscriptionManager.DATA_ROAMING + " INTEGER DEFAULT " + SubscriptionManager.DATA_ROAMING_DEFAULT + ","
                     + SubscriptionManager.MCC + " INTEGER DEFAULT 0,"
                     + SubscriptionManager.MNC + " INTEGER DEFAULT 0,"
+<<<<<<< HEAD
                     + SubscriptionManager.USER_NETWORK_MODE + " INTEGER DEFAULT " + RILConstants.PREFERRED_NETWORK_MODE + ","
+=======
+>>>>>>> android-7.1.2_r2
                     + SubscriptionManager.CB_EXTREME_THREAT_ALERT + " INTEGER DEFAULT 1,"
                     + SubscriptionManager.CB_SEVERE_THREAT_ALERT + " INTEGER DEFAULT 1,"
                     + SubscriptionManager.CB_AMBER_ALERT + " INTEGER DEFAULT 1,"
@@ -1247,7 +1250,14 @@ public class TelephonyProvider extends ContentProvider
             addStringAttribute(parser, "mmsproxy", map, MMSPROXY);
             addStringAttribute(parser, "mmsport", map, MMSPORT);
             addStringAttribute(parser, "mmsc", map, MMSC);
-            addStringAttribute(parser, "type", map, TYPE);
+
+            String apnType = parser.getAttributeValue(null, "type");
+            if (apnType != null) {
+                // Remove spaces before putting it in the map.
+                apnType = apnType.replaceAll("\\s+", "");
+                map.put(TYPE, apnType);
+            }
+
             addStringAttribute(parser, "protocol", map, PROTOCOL);
             addStringAttribute(parser, "roaming_protocol", map, ROAMING_PROTOCOL);
 
