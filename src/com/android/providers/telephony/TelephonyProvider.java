@@ -1247,7 +1247,14 @@ public class TelephonyProvider extends ContentProvider
             addStringAttribute(parser, "mmsproxy", map, MMSPROXY);
             addStringAttribute(parser, "mmsport", map, MMSPORT);
             addStringAttribute(parser, "mmsc", map, MMSC);
-            addStringAttribute(parser, "type", map, TYPE);
+
+            String apnType = parser.getAttributeValue(null, "type");
+            if (apnType != null) {
+                // Remove spaces before putting it in the map.
+                apnType = apnType.replaceAll("\\s+", "");
+                map.put(TYPE, apnType);
+            }
+
             addStringAttribute(parser, "protocol", map, PROTOCOL);
             addStringAttribute(parser, "roaming_protocol", map, ROAMING_PROTOCOL);
 
@@ -2454,7 +2461,7 @@ public class TelephonyProvider extends ContentProvider
             where = where + "edited=" + USER_EDITED + ")";
         }
 
-        if (simCountWithSameNumeric == subInfoList.size() - 1) {
+        if (subInfoList != null && simCountWithSameNumeric == subInfoList.size() - 1) {
             //Reset where as all slots have same sims
             where = null;
         }
